@@ -13,7 +13,7 @@ import {
   type RefCallback,
 } from 'react';
 
-interface StickToBottomState {
+export interface StickToBottomState {
   scrollTop: number;
   lastScrollTop?: number;
   ignoreScrollToTop?: number;
@@ -425,7 +425,7 @@ export const useStickToBottom = (options: StickToBottomOptions = {}) => {
     scrollRef.current?.removeEventListener('scroll', handleScroll);
     scrollRef.current?.removeEventListener('wheel', handleWheel);
     scroll?.addEventListener('scroll', handleScroll, { passive: true });
-    scroll?.addEventListener('wheel', handleWheel);
+    scroll?.addEventListener('wheel', handleWheel, { passive: true });
   }, []);
 
   const contentRef = useRefCallback((content) => {
@@ -510,6 +510,7 @@ export const useStickToBottom = (options: StickToBottomOptions = {}) => {
     isAtBottom: isAtBottom || isNearBottom,
     isNearBottom,
     escapedFromLock,
+    state,
   };
 };
 

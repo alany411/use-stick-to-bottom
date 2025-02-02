@@ -4,17 +4,26 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as React from 'react';
-import { createContext, ReactNode, RefCallback, useContext, useEffect, useLayoutEffect, useMemo } from 'react';
-import { ScrollToBottom, StopScroll, StickToBottomOptions, useStickToBottom } from './useStickToBottom.js';
+import { createContext, ReactNode, useContext, useEffect, useLayoutEffect, useMemo } from 'react';
+import {
+  ScrollToBottom,
+  StopScroll,
+  StickToBottomOptions,
+  useStickToBottom,
+  GetTargetScrollTop,
+  StickToBottomState,
+} from './useStickToBottom.js';
 
 export interface StickToBottomContext {
-  contentRef: RefCallback<HTMLDivElement>;
-  scrollRef: RefCallback<HTMLDivElement>;
+  contentRef: React.MutableRefObject<HTMLElement | null> & React.RefCallback<HTMLElement>;
+  scrollRef: React.MutableRefObject<HTMLElement | null> & React.RefCallback<HTMLElement>;
   scrollToBottom: ScrollToBottom;
   stopScroll: StopScroll;
   isAtBottom: boolean;
   isNearBottom: boolean;
   escapedFromLock: boolean;
+  targetScrollTop?: GetTargetScrollTop | null;
+  state: StickToBottomState;
 }
 
 const StickToBottomContext = createContext<StickToBottomContext | null>(null);
@@ -26,7 +35,7 @@ export interface StickToBottomProps
   children: ((context: StickToBottomContext) => ReactNode) | ReactNode;
 }
 
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export function StickToBottom({
   instance,
@@ -36,9 +45,17 @@ export function StickToBottom({
   mass,
   damping,
   stiffness,
-  targetScrollTop,
+  targetScrollTop: currentTargetScrollTop,
   ...props
 }: StickToBottomProps) {
+  const targetScrollTop = React.useCallback<GetTargetScrollTop>(
+    (target, elements) => {
+      const get = context.targetScrollTop ?? currentTargetScrollTop;
+      return get?.(target, elements) ?? target;
+    },
+    [currentTargetScrollTop]
+  );
+
   const defaultInstance = useStickToBottom({
     mass,
     damping,
@@ -47,7 +64,8 @@ export function StickToBottom({
     initial,
     targetScrollTop,
   });
-  const { scrollRef, contentRef, scrollToBottom, stopScroll, isAtBottom, isNearBottom, escapedFromLock } =
+
+  const { scrollRef, contentRef, scrollToBottom, stopScroll, isAtBottom, isNearBottom, escapedFromLock, state } =
     instance ?? defaultInstance;
 
   const context = useMemo<StickToBottomContext>(
@@ -59,8 +77,9 @@ export function StickToBottom({
       isNearBottom,
       escapedFromLock,
       contentRef,
+      state,
     }),
-    [scrollToBottom, isAtBottom, contentRef, escapedFromLock]
+    [scrollToBottom, isAtBottom, contentRef, escapedFromLock, state]
   );
 
   useIsomorphicLayoutEffect(() => {
